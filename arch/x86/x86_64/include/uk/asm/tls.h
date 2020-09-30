@@ -41,18 +41,29 @@
 
 extern char _tls_start[], _etdata[], _tls_end[];
 
+static inline __sz ukarch_tls_area_align(void)
+{
+        /* Ideally, TLS area alignment should come from the ELF TLS program
+         * header, but an alignment of 32 should be enough to allow the use of
+         * optimized SSE instructions which require operands aligned on 16 or
+         * 32 bytes.
+	 */
+	return 32;
+}
+
 static inline __sz ukarch_tls_area_size(void)
 {
 	/* x86_64 ABI requires that fs:%0 contains the address of itself, to
 	 * allow certain optimizations. Hence, the overall size of the size of
 	 * the TLS area, plus 8 bytes.
+	 * Moreover, the thread pointer in fs should be aligned. To ensure
+	 * proper alignment, given that the allocator will align the start of
+	 * the TLS area, we pad its size to a multiple of the alignment so that
+	 * the thread pointer itself will be aligned.
 	 */
-	return _tls_end - _tls_start + 8;
-}
-
-static inline __sz ukarch_tls_area_align(void)
-{
-	return 8;
+	__sz tls_len = _tls_end - _tls_start;
+	__sz padding = tls_len % ukarch_tls_area_align();
+	return padding + tls_len + 8;
 }
 
 static inline void ukarch_tls_area_copy(void *tls_area)
@@ -60,6 +71,8 @@ static inline void ukarch_tls_area_copy(void *tls_area)
 	__sz tls_len = _tls_end - _tls_start;
 	__sz tls_data_len = _etdata - _tls_start;
 	__sz tls_bss_len = _tls_end - _etdata;
+	/* Skip padding at the start of TLS area used for alignment. */
+	tls_area += tls_len % ukarch_tls_area_align();
 
 	memcpy(tls_area, _tls_start, tls_data_len);
 	memset(tls_area + tls_data_len, 0, tls_bss_len);
@@ -69,5 +82,7 @@ static inline void ukarch_tls_area_copy(void *tls_area)
 
 static inline void *ukarch_tls_pointer(void *tls_area)
 {
-	return tls_area + (_tls_end - _tls_start);
+	__sz tls_len = _tls_end - _tls_start;
+	__sz padding = tls_len % ukarch_tls_area_align();
+	return tls_area + padding + tls_len;
 }
