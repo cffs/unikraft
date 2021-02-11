@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /*
- * Authors: Simon Kuenzer <simon.kuenzer@neclab.eu>
- *
+ * Authors: Robert Hrusecky <roberth@cs.utexas.edu>
+ *          Omar Jamil <omarj2898@gmail.com>
+ *          Sachin Beldona <sachinbeldona@utexas.edu>
  *
  * Copyright (c) 2017, NEC Europe Ltd., NEC Corporation. All rights reserved.
  *
@@ -33,21 +34,24 @@
  * THIS HEADER MAY NOT BE EXTRACTED OR MODIFIED IN ANY WAY.
  */
 
-#ifndef __SETUP_H__
-#define __SETUP_H__
+#ifndef __CPIO_H__
+#define __CPIO_H__
+#include <uk/plat/memory.h>
 
-#include <sys/types.h>
-
-struct liblinuxuplat_memregion {
-	void *base;
-	size_t len;
+enum cpio_error {
+	CPIO_SUCCESS = 0,
+	CPIO_INVALID_HEADER,
+	CPIO_FILE_CREATE_FAILED,
+	CPIO_FILE_WRITE_FAILED,
+	CPIO_FILE_CHMOD_FAILED,
+	CPIO_FILE_CLOSE_FAILED,
+	CPIO_MKDIR_FAILED,
+	CPIO_MOUNT_FAILED,
+	CPIO_NO_MEMREGION,
+	CPIO_MALFORMED_FILE,
+	CPIO_NOMEM,
+	CPIO_NO_MOUNT_LOCATION
 };
 
-struct liblinuxuplat_opts {
-	struct liblinuxuplat_memregion heap;
-	struct liblinuxuplat_memregion initrd;
-};
-
-extern struct liblinuxuplat_opts _liblinuxuplat_opts;
-
-#endif /* __SETUP_H__ */
+enum cpio_error cpio_extract(char *loc, void *mem, size_t len);
+#endif /*__CPIO_H__*/
