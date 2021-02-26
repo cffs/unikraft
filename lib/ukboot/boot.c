@@ -72,6 +72,13 @@
 
 int main(int argc, char *argv[]) __weak;
 
+#ifdef CONFIG_LIBMUSL
+void _init() __attribute__((weak));
+void _fini() __attribute__((weak));
+int __libc_start_main(
+        int (*)(), int, char **, void (*)(), void(*)(), void(*)());
+#endif
+
 static void main_thread_func(void *arg) __noreturn;
 
 struct thread_main_arg {
@@ -145,7 +152,11 @@ static void main_thread_func(void *arg)
 	}
 	uk_pr_info("])\n");
 
+#ifdef CONFIG_LIBMUSL
+        ret = __libc_start_main(main, tma->argc, tma->argv, _init, _fini, 0);
+#else
 	ret = main(tma->argc, tma->argv);
+#endif
 	uk_pr_info("main returned %d, halting system\n", ret);
 	ret = (ret != 0) ? UKPLAT_CRASH : UKPLAT_HALT;
 
